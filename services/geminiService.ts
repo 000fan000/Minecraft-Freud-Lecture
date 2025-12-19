@@ -2,12 +2,10 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 
 /**
- * Generates speech audio for the lecture text using Gemini TTS.
- * @param text The lecture content to be converted to speech.
- * @returns Base64 encoded raw PCM audio data.
+ * Generates speech audio for a specific text segment using Gemini TTS.
  */
-export async function generateSpeech(text: string): Promise<string | undefined> {
-  // Always create a new instance right before use to ensure the latest API key
+export async function generateSpeechSegment(text: string): Promise<string | undefined> {
+  // Always initialize with the current environment key
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
@@ -18,23 +16,20 @@ export async function generateSpeech(text: string): Promise<string | undefined> 
         responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
+            // 'Kore' is a good, deep voice for a male scholarly character
             prebuiltVoiceConfig: { voiceName: 'Kore' },
           },
         },
       },
     });
 
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    return base64Audio;
+    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
   } catch (error) {
-    console.error("Internal Gemini TTS Error:", error);
+    console.error("Gemini TTS Error for segment:", text, error);
     throw error;
   }
 }
 
-/**
- * Manually decodes a base64 string into a Uint8Array.
- */
 export function decodeBase64(base64: string): Uint8Array {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -45,9 +40,6 @@ export function decodeBase64(base64: string): Uint8Array {
   return bytes;
 }
 
-/**
- * Decodes raw PCM audio data (S16_LE) into an AudioBuffer.
- */
 export async function decodeAudioBuffer(
   data: Uint8Array,
   ctx: AudioContext,
